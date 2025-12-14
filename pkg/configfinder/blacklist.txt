@@ -1,0 +1,4 @@
+.*/hypr/shaders/.*
+.*\.sh$
+.*history.*
+.*tmp_.*

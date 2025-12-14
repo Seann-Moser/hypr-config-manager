@@ -1,16 +1,17 @@
-package cmd
+package utils
 
 import (
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 	"os"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
 // BindFlags populates cmd.Flags() based on the exported fields of cfg (must be pointer to struct).
@@ -324,4 +325,20 @@ func PrintAllFlags(fs *pflag.FlagSet) {
 		)
 
 	})
+}
+
+func DeduplicateStrings(input []string) []string {
+	// Use a map to track seen strings
+	seen := make(map[string]struct{})
+	var result []string
+
+	for _, str := range input {
+		// If the string is not in the 'seen' map, add it to the result
+		if _, exists := seen[str]; !exists {
+			seen[str] = struct{}{}
+			result = append(result, str)
+		}
+	}
+
+	return result
 }

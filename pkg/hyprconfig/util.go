@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Seann-Moser/credentials/session"
+	"github.com/Seann-Moser/hypr-config-manager/pkg/utils"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -202,34 +203,78 @@ func ExtractLines(filePath string) ([]string, error) {
 	return sourceLines, nil
 }
 
+// ParseKeyValuePairs takes a string and returns a map of key-value pairs
+func ParseKeyValuePairs(input string) map[string]string {
+	// Define a regular expression to match the pattern "$key = value"
+	re := regexp.MustCompile(`\$(\w+)\s*=\s*(\S+)`)
+
+	// Create a map to store the key-value pairs
+	result := make(map[string]string)
+
+	// Find all matches in the input string
+	matches := re.FindAllStringSubmatch(input, -1)
+
+	// Loop through each match and populate the map
+	for _, match := range matches {
+		// match[1] is the key (e.g., "terminal"), and match[2] is the value (e.g., "kitty")
+		result["$"+match[1]] = match[2]
+	}
+
+	return result
+}
+
+var ignore = map[string]struct{}{
+	"va11-popup":   {},
+	"va11-confirm": {},
+}
+
 // ExtractExecOnceCommands takes a multi-line string and returns a list of commands and arguments, separated
 func ExtractExecOnceCommands(input string) []string {
-	// Regular expression to match "exec-once" lines
+	// Regular expression to match lines with exec or exec-once
+	pairs := ParseKeyValuePairs(input)
 	reList := []*regexp.Regexp{
 		regexp.MustCompile(`#*\s*exec-once\s*=\s*([^\n]+)`),
-		regexp.MustCompile(`#*\s*exec\s*=\s*([^\n]+)`),
+		regexp.MustCompile(`#*\s*exec\s*[=,]\s*([^\n]+)`),
 	}
+
 	var commands []string
 	for _, re := range reList {
-		// Find all matches
+		// Find all matches for the exec or exec-once pattern
 		matches := re.FindAllStringSubmatch(input, -1)
 
 		for _, match := range matches {
-			// match[1] contains the command and its arguments (after `exec-once=`)
+			// match[1] contains the command and its arguments (after exec= or exec-once=)
 			if strings.Contains(match[0], "#") {
 				continue
 			}
 			commandLine := match[1]
 
-			// Split by '&' and trim any extra whitespace
-			parts := strings.Split(commandLine, "&")
+			// Split by '&' or '&&' to handle both simple background execution and sequential execution
+			parts := strings.FieldsFunc(commandLine, func(c rune) bool {
+				return c == '&' || c == '\n' || c == ';'
+			})
+
 			for _, part := range parts {
-				pts := strings.Split(strings.TrimSpace(part), " ")
-				commands = append(commands, strings.TrimSpace(pts[0]))
+				// Trim whitespace and split by spaces to handle command with arguments
+				pts := strings.Fields(strings.TrimSpace(part))
+				if len(pts) > 0 {
+					if v, ok := pairs[pts[0]]; ok {
+						if _, ok := ignore[strings.TrimSpace(v)]; ok {
+							continue
+						}
+						commands = append(commands, strings.TrimSpace(v)) // Get only the main command
+					} else {
+						if _, ok := ignore[strings.TrimSpace(pts[0])]; ok {
+							continue
+						}
+						commands = append(commands, strings.TrimSpace(pts[0])) // Get only the main command
+					}
+				}
 			}
 		}
 	}
-	return commands
+
+	return utils.DeduplicateStrings(commands)
 }
 
 // ExtractExecOnceCommands takes a multi-line string and returns a list of commands and arguments, separated

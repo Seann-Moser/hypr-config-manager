@@ -15,6 +15,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/Seann-Moser/hypr-config-manager/pkg/utils"
 )
 
 //go:embed blacklist.txt
@@ -229,7 +231,7 @@ func (cf *ConfigFinder) RunStrace(application string) ([]string, error) {
 		slog.Error("failed to remove log file", "file", logFile, "err", err)
 	}
 
-	return DeduplicateStrings(filePaths), nil
+	return utils.DeduplicateStrings(filePaths), nil
 }
 func (cf *ConfigFinder) isBlacklisted(v string) bool {
 	for _, r := range cf.blacklistReg {
@@ -239,21 +241,7 @@ func (cf *ConfigFinder) isBlacklisted(v string) bool {
 	}
 	return true
 }
-func DeduplicateStrings(input []string) []string {
-	// Use a map to track seen strings
-	seen := make(map[string]struct{})
-	var result []string
 
-	for _, str := range input {
-		// If the string is not in the 'seen' map, add it to the result
-		if _, exists := seen[str]; !exists {
-			seen[str] = struct{}{}
-			result = append(result, str)
-		}
-	}
-
-	return result
-}
 func ExtractBetweenQuotes(input string) (string, error) {
 	// Regular expression to match content between quotes
 	re := regexp.MustCompile(`"([^"]*)"`)

@@ -10,6 +10,7 @@ import (
 	"github.com/Seann-Moser/credentials/user"
 	"github.com/Seann-Moser/hypr-config-manager/pkg/hchandler"
 	"github.com/Seann-Moser/hypr-config-manager/pkg/hyprconfig"
+	"github.com/Seann-Moser/hypr-config-manager/pkg/utils"
 	"github.com/Seann-Moser/mserve"
 	"github.com/Seann-Moser/rbac"
 	"github.com/spf13/cobra"
@@ -32,15 +33,15 @@ var serveCmd = &cobra.Command{
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		mongoCreds, err := LoadConfig[options.Credential](cmd, "mongo")
+		mongoCreds, err := utils.LoadConfig[options.Credential](cmd, "mongo")
 		if err != nil {
 			return err
 		}
-		cfg, err := LoadConfig[Config](cmd, "c")
+		cfg, err := utils.LoadConfig[Config](cmd, "c")
 		if err != nil {
 			return err
 		}
-		sslConfig, err := LoadConfig[mserve.SSLConfig](cmd, "c")
+		sslConfig, err := utils.LoadConfig[mserve.SSLConfig](cmd, "c")
 		if err != nil {
 			return err
 		}
@@ -100,15 +101,15 @@ var serveCmd = &cobra.Command{
 	}}
 
 func init() {
-	err := setFlags(serveCmd)
+	err := setServerFlags(serveCmd)
 	if err != nil {
 		fmt.Println(err)
 	}
 	rootCmd.AddCommand(serveCmd)
 }
 
-func setFlags(cmd *cobra.Command) error {
-	mongoCfg, err := BindFlags(&options.Credential{
+func setServerFlags(cmd *cobra.Command) error {
+	mongoCfg, err := utils.BindFlags(&options.Credential{
 		Password: "default",
 		Username: "admin",
 	}, "mongo")
@@ -117,7 +118,7 @@ func setFlags(cmd *cobra.Command) error {
 	}
 
 	cmd.Flags().AddFlagSet(mongoCfg)
-	cfg, err := BindFlags(&Config{
+	cfg, err := utils.BindFlags(&Config{
 		MongoURL:      "mongodb://mongodb:27017",
 		MongoDatabase: "local",
 		Secret:        "default",
@@ -131,7 +132,7 @@ func setFlags(cmd *cobra.Command) error {
 
 	cmd.Flags().AddFlagSet(cfg)
 
-	cfg, err = BindFlags(&mserve.SSLConfig{
+	cfg, err = utils.BindFlags(&mserve.SSLConfig{
 		Port: 8080,
 	}, "c")
 	if err != nil {

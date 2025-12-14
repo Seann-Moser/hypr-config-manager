@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Seann-Moser/hypr-config-manager/cmd/hypr"
 	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
@@ -50,4 +51,5 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	viper.AutomaticEnv()
+	rootCmd.AddCommand(hypr.HyprCmd)
 }
